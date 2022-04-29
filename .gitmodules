@@ -1,0 +1,3 @@
+[submodule "sdvp_qtcommon"]
+	path = sdvp_qtcommon
+	url = git@github.com:RISE-Dependable-Transport-Systems/sdvp_qtcommon.git
