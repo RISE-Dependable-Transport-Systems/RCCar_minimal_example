@@ -1,9 +1,9 @@
 #include <QCoreApplication>
-#include "sdvp_qtcommon/core/simplewatchdog.h"
-#include "sdvp_qtcommon/legacy/packetinterfacetcpserver.h"
-#include "sdvp_qtcommon/vehicles/carstate.h"
-#include "sdvp_qtcommon/vehicles/controller/carmovementcontroller.h"
-#include "sdvp_qtcommon/autopilot/waypointfollower.h"
+#include "WayWise/core/simplewatchdog.h"
+#include "WayWise/legacy/packetinterfacetcpserver.h"
+#include "WayWise/vehicles/carstate.h"
+#include "WayWise/vehicles/controller/carmovementcontroller.h"
+#include "WayWise/autopilot/waypointfollower.h"
 
 int main(int argc, char *argv[])
 {
