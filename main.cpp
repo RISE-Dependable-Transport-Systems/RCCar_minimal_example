@@ -1,19 +1,20 @@
 #include <QCoreApplication>
 #include "WayWise/core/simplewatchdog.h"
-#include "WayWise/legacy/packetinterfacetcpserver.h"
 #include "WayWise/vehicles/carstate.h"
 #include "WayWise/vehicles/controller/carmovementcontroller.h"
-#include "WayWise/autopilot/waypointfollower.h"
+#include "WayWise/autopilot/purepursuitwaypointfollower.h"
+#include "WayWise/communication/mavsdkvehicleserver.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     const int mUpdateVehicleStatePeriod_ms = 25;
     QTimer mUpdateVehicleStateTimer;
-    PacketInterfaceTCPServer mPacketIFServer;
 
-    // --- VehicleState and lower-level control setup ---
     QSharedPointer<CarState> mCarState(new CarState);
+    MavsdkVehicleServer mavsdkVehicleServer(mCarState);
+
+    // --- Lower-level control setup ---
     QSharedPointer<CarMovementController> mCarMovementController(new CarMovementController(mCarState));
 
     QObject::connect(&mUpdateVehicleStateTimer, &QTimer::timeout, [&](){
@@ -22,15 +23,13 @@ int main(int argc, char *argv[])
     mUpdateVehicleStateTimer.start(mUpdateVehicleStatePeriod_ms);
 
     // --- Autopilot ---
-    QSharedPointer<WaypointFollower> mWaypointFollower(new WaypointFollower(mCarMovementController));
+    QSharedPointer<PurepursuitWaypointFollower> mWaypointFollower(new PurepursuitWaypointFollower(mCarMovementController));
     mWaypointFollower->setPurePursuitRadius(1.0);
     mWaypointFollower->setRepeatRoute(false);
 
-    // Setup TCP/IP communication towards RControlStation
-    mPacketIFServer.setVehicleState(mCarState);
-    mPacketIFServer.setMovementController(mCarMovementController);
-    mPacketIFServer.setWaypointFollower(mWaypointFollower);
-    mPacketIFServer.listen();
+    // Setup MAVLINK communication towards ControlTower
+    mavsdkVehicleServer.setMovementController(mCarMovementController);
+    mavsdkVehicleServer.setWaypointFollower(mWaypointFollower);
 
     // Watchdog that warns when EventLoop is slowed down
     SimpleWatchdog watchdog;
