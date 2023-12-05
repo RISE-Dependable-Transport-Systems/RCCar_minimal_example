@@ -4,9 +4,12 @@
 #include "WayWise/vehicles/controller/carmovementcontroller.h"
 #include "WayWise/autopilot/purepursuitwaypointfollower.h"
 #include "WayWise/communication/mavsdkvehicleserver.h"
+#include "WayWise/logger/logger.h"
 
 int main(int argc, char *argv[])
 {
+    Logger::initVehicle();
+
     QCoreApplication a(argc, argv);
     const int mUpdateVehicleStatePeriod_ms = 25;
     QTimer mUpdateVehicleStateTimer;

@@ -11,18 +11,12 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# QtCreator supports the following variables for Android, which are identical to qmake Android variables.
-# Check http://doc.qt.io/qt-5/deployment-android.html for more information.
-# They need to be set before the find_package(Qt5 ...) call.
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
-#if(ANDROID)
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-#    if (ANDROID_ABI STREQUAL "armeabi-v7a")
-#        set(ANDROID_EXTRA_LIBS
-#            ${CMAKE_CURRENT_SOURCE_DIR}/path/to/libcrypto.so
-#            ${CMAKE_CURRENT_SOURCE_DIR}/path/to/libssl.so)
-#    endif()
-#endif()
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
 find_package(Qt5 COMPONENTS Core Network SerialPort REQUIRED)
 find_package(MAVSDK REQUIRED)
@@ -44,9 +38,12 @@ add_executable(RCCar_minimal
     WayWise/sensors/gnss/ubloxrover.cpp
     WayWise/sensors/camera/gimbal.h
     WayWise/communication/vehicleconnections/vehicleconnection.cpp
+    WayWise/communication/mavlinkparameterserver.cpp
+    WayWise/communication/parameterserver.cpp
     WayWise/autopilot/waypointfollower.h
     WayWise/autopilot/purepursuitwaypointfollower.cpp
     WayWise/communication/mavsdkvehicleserver.cpp
+    WayWise/logger/logger.cpp
 )
 
 target_include_directories(RCCar_minimal PRIVATE WayWise/)
