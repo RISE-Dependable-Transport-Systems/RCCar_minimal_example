@@ -44,6 +44,7 @@ add_executable(RCCar_minimal
     WayWise/autopilot/purepursuitwaypointfollower.cpp
     WayWise/communication/mavsdkvehicleserver.cpp
     WayWise/logger/logger.cpp
+    WayWise/sensors/fusion/sdvpvehiclepositionfuser.cpp
 )
 
 target_include_directories(RCCar_minimal PRIVATE WayWise/)

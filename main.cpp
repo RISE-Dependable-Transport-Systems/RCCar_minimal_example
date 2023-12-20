@@ -1,27 +1,58 @@
 #include <QCoreApplication>
+#include <QLineF>
 #include "WayWise/core/simplewatchdog.h"
 #include "WayWise/vehicles/carstate.h"
 #include "WayWise/vehicles/controller/carmovementcontroller.h"
 #include "WayWise/autopilot/purepursuitwaypointfollower.h"
 #include "WayWise/communication/mavsdkvehicleserver.h"
 #include "WayWise/logger/logger.h"
+#include "WayWise/sensors/fusion/sdvpvehiclepositionfuser.h"
 
 int main(int argc, char *argv[])
 {
     Logger::initVehicle();
 
     QCoreApplication a(argc, argv);
-    const int mUpdateVehicleStatePeriod_ms = 25;
+    const int mUpdateVehicleStatePeriod_ms = 100;
     QTimer mUpdateVehicleStateTimer;
 
     QSharedPointer<CarState> mCarState(new CarState);
     MavsdkVehicleServer mavsdkVehicleServer(mCarState);
 
+    SDVPVehiclePositionFuser mFuser;
+
     // --- Lower-level control setup ---
     QSharedPointer<CarMovementController> mCarMovementController(new CarMovementController(mCarState));
 
     QObject::connect(&mUpdateVehicleStateTimer, &QTimer::timeout, [&](){
-        mCarState->simulationStep(mUpdateVehicleStatePeriod_ms, PosType::fused);
+        // static QTime lastTimeCalled = QTime::currentTime().addSecs(-QDateTime::currentDateTime().offsetFromUtc());
+        QTime thisTimeCalled = QTime::currentTime().addSecs(-QDateTime::currentDateTime().offsetFromUtc());
+        // int dt_ms = lastTimeCalled.msecsTo(thisTimeCalled);
+
+        PosPoint imuPos = mCarState->getPosition(PosType::IMU);
+        PosPoint odomPos = mCarState->getPosition(PosType::odom);
+        PosPoint gnssPos = mCarState->getPosition(PosType::GNSS);
+
+        PosPoint simPosBeforeStep = mCarState->getPosition(PosType::simulated);
+        mCarState->simulationStep(mUpdateVehicleStatePeriod_ms, PosType::simulated);
+        PosPoint simPosAfterStep = mCarState->getPosition(PosType::simulated);
+
+        imuPos.setYaw(simPosAfterStep.getYaw());
+        mCarState->setPosition(imuPos);
+        mFuser.correctPositionAndYawIMU(mCarState);
+
+        gnssPos.setXYZ(simPosAfterStep.getXYZ());
+        xyz_t xyzGNSS = simPosAfterStep.getXYZ();
+        xyz_t lastXyzGNSS = simPosBeforeStep.getXYZ();
+        gnssPos.setYaw(atan2(xyzGNSS.y - lastXyzGNSS.y, xyzGNSS.x - lastXyzGNSS.x) * 180.0 / M_PI);
+        gnssPos.setTime(thisTimeCalled);
+        mCarState->setPosition(gnssPos);
+        mFuser.correctPositionAndYawGNSS(mCarState, QLineF(QPointF(lastXyzGNSS.x, lastXyzGNSS.y), gnssPos.getPoint()).length(), false);
+
+        odomPos.setXYZ(simPosAfterStep.getXYZ());
+        mFuser.correctPositionAndYawOdom(mCarState, (mCarState->getSpeed() < 0 ? -1.0 : 1.0) * QLineF(simPosBeforeStep.getPoint(), simPosAfterStep.getPoint()).length());
+
+        // lastTimeCalled = thisTimeCalled;
     });
     mUpdateVehicleStateTimer.start(mUpdateVehicleStatePeriod_ms);
 
